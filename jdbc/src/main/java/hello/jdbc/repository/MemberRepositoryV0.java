@@ -52,13 +52,57 @@ public class MemberRepositoryV0 {
                 member.setMoney(rs.getInt("money"));
                 return member;
             }else {
-                throw new NoSuchElementException("member not found");            }
+                throw new NoSuchElementException("member not found");
+            }
 
         } catch (SQLException e) {
             log.error("db error", e);
             throw e;
         } finally { // 리소스 정리
             close(con, pstmt, rs);
+        }
+    }
+
+    public void update(String memberId, int money) throws SQLException {
+        String sql = "update member set money = ? where member_id = ?";
+
+        Connection con = null;
+        PreparedStatement pstmt = null;
+
+        try {
+            con = getConnection();
+            pstmt = con.prepareStatement(sql);
+            pstmt.setInt(1, money);
+            pstmt.setString(2, memberId);
+            int resultSize = pstmt.executeUpdate();
+            log.info("resultSize={}", resultSize);
+
+        } catch (SQLException e) {
+            log.error("db error", e);
+            throw e;
+        } finally { // 리소스 정리
+            close(con, pstmt, null);
+        }
+    }
+
+    public void delete(String memberId) throws SQLException {
+        String sql = "delet from member where member_id = ?";
+
+        Connection con = null;
+        PreparedStatement pstmt = null;
+
+        try {
+            con = getConnection();
+            pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, memberId);
+            int resultSize = pstmt.executeUpdate();
+            log.info("resultSize={}", resultSize);
+
+        } catch (SQLException e) {
+            log.error("db error", e);
+            throw e;
+        } finally { // 리소스 정리
+            close(con, pstmt, null);
         }
     }
 
