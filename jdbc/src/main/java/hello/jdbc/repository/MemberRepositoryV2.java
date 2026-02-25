@@ -1,14 +1,21 @@
 package hello.jdbc.repository;
 
-import hello.jdbc.connection.DBConnectionUtil;
 import hello.jdbc.domain.Member;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.support.JdbcUtils;
 
+import javax.sql.DataSource;
 import java.sql.*;
 import java.util.NoSuchElementException;
 
 @Slf4j
-public class MemberRepositoryV0 {
+public class MemberRepositoryV2 {
+
+    private final DataSource dataSource;
+
+    public MemberRepositoryV2(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
 
     public Member save(Member member) throws SQLException {
         String sql = "insert into member(member_id, money) values(?, ?)";
@@ -63,6 +70,40 @@ public class MemberRepositoryV0 {
         }
     }
 
+    public Member findById(Connection con, String memberId) throws SQLException {
+        String sql = "select * from member where member_id = ?";
+
+//        Connection con = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        try {
+//            con = getConnection();
+            pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, memberId);
+
+            rs = pstmt.executeQuery();
+
+            if(rs.next()) {
+                Member member = new Member();
+                member.setMemberId(rs.getString("member_id"));
+                member.setMoney(rs.getInt("money"));
+                return member;
+            }else {
+                throw new NoSuchElementException("member not found");
+            }
+
+        } catch (SQLException e) {
+            log.error("db error", e);
+            throw e;
+        } finally { // 리소스 정리
+//            close(con, pstmt, rs);
+            JdbcUtils.closeResultSet(rs);
+            JdbcUtils.closeStatement(pstmt);
+//            JdbcUtils.closeConnection(con); // 커넥션은 여기서 닫지 않는다.
+        }
+    }
+
     public void update(String memberId, int money) throws SQLException {
         String sql = "update member set money = ? where member_id = ?";
 
@@ -82,6 +123,28 @@ public class MemberRepositoryV0 {
             throw e;
         } finally { // 리소스 정리
             close(con, pstmt, null);
+        }
+    }
+    public void update(Connection con, String memberId, int money) throws SQLException {
+        String sql = "update member set money = ? where member_id = ?";
+
+//        Connection con = null;
+        PreparedStatement pstmt = null;
+
+        try {
+//            con = getConnection();
+            pstmt = con.prepareStatement(sql);
+            pstmt.setInt(1, money);
+            pstmt.setString(2, memberId);
+            int resultSize = pstmt.executeUpdate();
+            log.info("resultSize={}", resultSize);
+
+        } catch (SQLException e) {
+            log.error("db error", e);
+            throw e;
+        } finally { // 리소스 정리
+            JdbcUtils.closeStatement(pstmt);
+//            JdbcUtils.closeConnection(con); // 커넥션은 여기서 닫지 않는다.
         }
     }
 
@@ -107,34 +170,15 @@ public class MemberRepositoryV0 {
     }
 
     private void close(Connection con, Statement stmt, ResultSet rs) {
-
-        if(rs != null) {
-            try {
-                rs.close();
-            } catch (SQLException e) {
-                log.info("error", e);
-            }
-        }
-
-        if(stmt != null) {
-            try {
-                stmt.close();
-            } catch (SQLException e) {
-                log.info("error", e);
-            }
-
-        }
-
-        if(con != null) {
-            try {
-                con.close();
-            } catch (SQLException e) {
-                log.info("error", e);
-            }
-        }
+        JdbcUtils.closeResultSet(rs);
+        JdbcUtils.closeStatement(stmt);
+        JdbcUtils.closeConnection(con);
     }
-    private Connection getConnection() {
-        return DBConnectionUtil.getConnection();
+
+    private Connection getConnection() throws SQLException {
+        Connection con = dataSource.getConnection();
+        log.info("get connection={}, class={} ", con, con.getClass());
+        return con;
     }
 
 }

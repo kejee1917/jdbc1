@@ -94,7 +94,7 @@ public class MemberRepositoryV1 {
     }
 
     public void delete(String memberId) throws SQLException {
-        String sql = "delet from member where member_id = ?";
+        String sql = "delete from member where member_id = ?";
 
         Connection con = null;
         PreparedStatement pstmt = null;
