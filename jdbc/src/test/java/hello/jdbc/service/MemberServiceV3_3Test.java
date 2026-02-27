@@ -70,6 +70,10 @@ class MemberServiceV3_3Test {
         memberRepository.delete(MEMBER_EX);
     }
 
+    @Test
+    void aopCheck() {
+        log.info("memberService class={}", memberService.getClass());//CGLIB~~
+    }
 
     @Test
     @DisplayName("정상이체")
